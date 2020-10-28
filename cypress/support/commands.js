@@ -5,6 +5,10 @@ import './modules/commands'
 import './plugins/commands'
 import './projects/commands'
 
+import compareVersions from 'compare-versions';
+import 'cypress-iframe';
+const shell = require('shelljs')
+
 // Commands in this file are CRUCIAL and are an embedded part of the REDCap Cypress Framework.
 // They are very stable and do not change often, if ever
 
@@ -46,22 +50,38 @@ Cypress.Commands.add('visit_base', (options) => {
     })
 })
 
-Cypress.Commands.add('base_db_seed', () => {
-    cy.mysql_db('structure').then(() => {
+Cypress.Commands.add('base_db_seed', () => {    
 
-        console.log(window.base_url)
+    let redcap_source_path = Cypress.env('redcap_source_path')
 
-        //Seeds the database
-        cy.mysql_db('/versions/' + Cypress.env('redcap_version'), window.base_url).then(() => {
+    if(redcap_source_path === undefined){
+        alert('redcap_source_path, which defines where your REDCap source code exists, is missing in cypress.env.json.  Please configure it before proceeding.')
+    }
 
-            if(Cypress.env('redcap_hooks_path') !== undefined){
-                const redcap_hooks_path = "REDCAP_HOOKS_PATH/" + Cypress.env('redcap_hooks_path').replace(/\//g, "\\\\/");
-                cy.mysql_db('hooks_config', redcap_hooks_path) //Fetch the hooks SQL seed data
-            }
+    cy.task('populateStructureAndData', {   
+                                            redcap_version: Cypress.env('redcap_version'), 
+                                            advanced_user_info: compareVersions.compare(Cypress.env('redcap_version'), '10.1.0', '>='), 
+                                            source_location: redcap_source_path
+                                        }).then((structure_and_data_file_exists) => {
 
-            //Clear out all cookies
-            cy.clearCookies()
-        })
+        //Only run this block if the Structure and Data File exists and has gone through proper processes
+        if(structure_and_data_file_exists){
+            
+            cy.mysql_db('structure_and_data', window.base_url).then(() => {
+
+                if(Cypress.env('redcap_hooks_path') !== undefined){
+                    const redcap_hooks_path = "REDCAP_HOOKS_PATH/" + Cypress.env('redcap_hooks_path').replace(/\//g, "\\/");
+                    cy.mysql_db('hooks_config', redcap_hooks_path) //Fetch the hooks SQL seed data
+                }
+
+                //Clear out all cookies
+                cy.clearCookies()
+            })
+
+        } else {
+            alert('Warning: Error generating structure and data file.  This usually happpens because your REDCap source code is missing files.')
+        }
+     
     })
 })
 
@@ -82,16 +102,12 @@ Cypress.Commands.add('maintain_login', () => {
 
             //In most cases, we'll have cookies to preserve to maintain a login
             if (cookies.length > 0){
-
                 console.log('Cookie Login')
-
                 cookies.map(cookie =>  Cypress.Cookies.preserveOnce(cookie['name']) )
 
             //But, if we don't, then let's simply re-login, right?    
             } else {     
-
                 console.log('Regular Login')
-
                 cy.login({ username: user, password: pass })
             }         
             
@@ -99,6 +115,8 @@ Cypress.Commands.add('maintain_login', () => {
 
     //If user type has changed, let's clear cookies and login again
     } else {
+        //Ensure we logout when a user changes
+        cy.visit('/redcap_v' + Cypress.env('redcap_version') + '/index.php?logout=1')
         cy.login({ username: user, password:  pass })
     }
 
@@ -117,6 +135,7 @@ Cypress.Commands.add('set_user_info', (users) => {
     }
 })
 
+
 Cypress.Commands.add('mysql_db', (type, replace = '') => {
     
     const mysql = Cypress.env("mysql")
@@ -127,50 +146,28 @@ Cypress.Commands.add('mysql_db', (type, replace = '') => {
         alert('redcap_version, which defines what version of REDCap you use in the seed database, is missing from cypress.env.json.  Please configure it before proceeding.')
     }
 
-    let cmd = ''
+    //Create the MySQL Installation
+    cy.task('generateMySQLCommand', {   
+                                mysql_name: mysql['path'],
+                                host: mysql['host'],
+                                port: mysql['port'],
+                                db_name: mysql['db_name'],
+                                db_user: mysql['db_user'],
+                                db_pass: mysql['db_pass'],
+                                type: type, 
+                                replace: replace
+                              }).then((mysql_cli) => {
+                                    
+                                    //Execute the MySQL Command
+                                    cy.exec(mysql_cli['cmd'], { timeout: 100000}).then((data_import) => {
+                                        expect(data_import['code']).to.eq(0)
 
-    //If we are on Windows, we have to run a bash script instead
-    if( window.navigator['platform'].match(/Win/g) ) {
-
-        console.log('Windows platform detected')
-
-        cmd = ".\\test_db\\db.bat" +
-        ' ' + mysql['path'] +
-        ' ' + mysql['host'] +
-        ' ' + mysql['port'] +
-        ' ' + mysql['db_name'] +
-        ' ' + mysql['db_user'] +
-        ' ' + mysql['db_pass'] +
-        ' ' + type +
-        ' ' + replace.replace(/\\\\/g, "\\")
-
-    //Anything else should run a Unix-style shell script    
-    } else { 
-
-        console.log('Unix-style platform enabled')
-
-        cmd = 'sh test_db/db.sh' +
-        ' ' + mysql['path'] +
-        ' ' + mysql['host'] +
-        ' ' + mysql['port'] +
-        ' ' + mysql['db_name'] +
-        ' ' + mysql['db_user'] +
-        ' ' + mysql['db_pass'] +
-        ' ' + type +
-        ' ' + replace
-    }
-
-   console.log(cmd)
-
-   cy.exec(cmd, { timeout: 100000}).then((response) => {
-        //cy.writeFile('log_of_mysql_command' + type + '.txt', response)
-
-        
-        expect(response['code']).to.eq(0)
-        expect(response['stdout']).to.eq('success')
-        console.log(response)
-    })
-
+                                        //Clean up after ourselves    
+                                        cy.task('deleteFile', { path: mysql_cli['tmp'] }).then((deleted_tmp_file) => {
+                                            expect(deleted_tmp_file).to.eq(true)                                         
+                                        })
+                                    })
+                              })
 })
 
 function test_link (link, title, try_again = true) {
@@ -308,17 +305,20 @@ Cypress.Commands.add('get_project_table_row_col', (row = '1', col = '0') => {
     cy.get('table#table-proj_table tr:nth-child(' + row + ') td:nth-child(' + col + ')')
 })
 
-Cypress.Commands.add('upload_file', { prevSubject: true }, (subject, fileName) => {
-      cy.fixture(fileName).then((content) => {
+Cypress.Commands.add('upload_file', (fileName, fileType = ' ', selector) => {
+    cy.get(selector).then(subject => {
+      cy.fixture(fileName, 'base64')
+        .then(Cypress.Blob.base64StringToBlob)
+        .then(blob => {
           const el = subject[0]
-          const testFile = new File([content], fileName)
+          const testFile = new File([blob], fileName, { type: fileType })
           const dataTransfer = new DataTransfer()
-
           dataTransfer.items.add(testFile)
           el.files = dataTransfer.files
-          cy.wrap(subject).trigger('change', { force: true })
-      })
+        })
+    })
 })
+
 
 Cypress.Commands.add('upload_data_dictionary', (fixture_path, fixture_file, pid, date_format = "DMY") => {
 
@@ -331,7 +331,7 @@ Cypress.Commands.add('upload_data_dictionary', (fixture_path, fixture_file, pid,
 
     } else {
 
-        let cmd = "sh dictionaries/read_file.sh " + '"' + "/dictionaries/" + fixture_path + "/" + fixture_file + '" '
+        let cmd = "sh file_helpers/read_file.sh " + '"' + "/dictionaries/" + fixture_path + "/" + fixture_file + '" '
 
         console.log(cmd)
 
@@ -339,6 +339,7 @@ Cypress.Commands.add('upload_data_dictionary', (fixture_path, fixture_file, pid,
 
         cy.exec(cmd, { timeout: 100000}).then((response) => {
             file_contents = response
+             expect(response['code']).to.eq(0)
         })
 
         cy.maintain_login().then(($r) => {
@@ -385,7 +386,6 @@ Cypress.Commands.add('upload_data_dictionary', (fixture_path, fixture_file, pid,
                             cy.request('/redcap_v' + Cypress.env('redcap_version') + '/Logging/index.php?pid=' + pid).should(($e) => {
                                 expect($e.body).to.contain('List of Data Changes')
                                 expect($e.body).to.contain('Manage/Design')
-                                expect($e.body).to.contain('Upload data dictionary')
                             })
                         })
                     })
@@ -395,13 +395,32 @@ Cypress.Commands.add('upload_data_dictionary', (fixture_path, fixture_file, pid,
     }
 })
 
+Cypress.Commands.add('create_cdisc_project', (project_name, project_type, cdisc_file, project_id) => {
+    //Set the Desired Project ID
+    const desired_pid = 'MAGIC_AUTO_NUMBER/' + project_id;
+    cy.mysql_db('set_auto_increment_value', desired_pid)
+
+    //Run through the steps to import the project via CDISC ODM
+    cy.visit_base({url: 'index.php?action=create'})
+    cy.get('input#app_title').type(project_name)
+    cy.get('select#purpose').select(project_type)
+    cy.get('input#project_template_radio2').click()
+    cy.upload_file(cdisc_file, 'xml', 'input[name="odm"]')
+    cy.get('button').contains('Create Project').click().then(() => {
+        let pid = null;
+        cy.url().should((url) => { 
+            return url
+        })
+    })
+})
+
 Cypress.Commands.add('add_api_user_to_project', (username, pid) => {
     cy.visit_version({ page: 'UserRights/index.php', params: 'pid=' + pid}).then(() => {
-        cy.get('input#new_username').type(username).then(() => {
-            cy.get('button').contains('Add with custom rights').click().then(() => {
-                cy.get('input[name=api_export]').click()
-                cy.get('input[name=api_import]').click()
-                cy.get('span.ui-button-text').contains('Add user').click().then(() => {
+        cy.get('input#new_username', {force: true}).clear({force: true}).type(username, {force: true}).then((element) => {
+            cy.get('button', {force: true}).contains('Add with custom rights').click({force: true}).then(() => {
+                cy.get('input[name=api_export]', {force: true}).click()
+                cy.get('input[name=api_import]', {force: true}).click()
+                cy.get('.ui-button', {force: true}).contains(/add user|save changes/i).click().then(() => {
                     cy.get('table#table-user_rights_roles_table').should(($e) => {
                         expect($e[0].innerText).to.contain(username)
                     })
@@ -453,7 +472,6 @@ Cypress.Commands.add('num_projects_excluding_archived', () => {
 
 })
 
-//
 //
 // -- This is a child command --
 // Cypress.Commands.add("drag", { prevSubject: 'element'}, (subject, options) => { ... })
