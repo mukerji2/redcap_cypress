@@ -7,6 +7,19 @@ describe('Data Entry through the Survey Feature', () => {
 
 	it('Should have the ability to directly enter data through a survey', () => {
 		//EXTERNAL
+		let survey_url = null;
+  		cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
+                    //Get the URL of the survey
+                    cy.get('input#longurl’').then((field) => {
+                        survey_url = field.val()
+					})
+					cy.visit(survey_url)
+					cy.get('tr#email-tr').within(($t) => {
+						cy.get('input').type('user1@yahoo.com')
+					})
+					cy.get('button#submit-btn-saverecord').first().click()
+			   })
+		/*
 		cy.get('a').contains('Add / Edit Records').click()
 		cy.get('button').contains('Add new record').click()
 		cy.get('table#event_grid_table').should(($t) => {
@@ -19,7 +32,7 @@ describe('Data Entry through the Survey Feature', () => {
 			cy.get('input').type('user1@yahoo.com')
 		})
 		cy.get('button#submit-btn-saverecord').first().click()
-		
+		*/
 	})
 
 	it('Should have the ability to delete all survey-related information and functions without impacting saved data', () => {
