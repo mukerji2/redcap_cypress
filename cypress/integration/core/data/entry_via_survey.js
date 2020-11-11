@@ -40,9 +40,6 @@ describe('Data Entry through the Survey Feature', () => {
 	})
 
 	describe('User Interface - Survey Distribution', () => {
-
-		
-
 		it('Should have the ability to automatically create a participant list using a designated email field when a survey is not in the first instrument position', () => {
 			//WITHIN
 			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'})
@@ -83,11 +80,11 @@ describe('Data Entry through the Survey Feature', () => {
 		it('Should have the ability to prompt the user to leave the survey to avoid overwriting survey responses when opening surveys from a data entry form when using Open Survey link', () => {
 			//WITHIN
 			cy.get('ul#SurveyActionDropDownUl').within(($u) => {
-			cy.get('a#surveyoption-openSurvey').first().click()
-			cy.get('div').should(($d) => {
-				expect($d).to.contain('overwrite any existing survey responses')
+				cy.get('a#surveyoption-openSurvey').first().click()
+				cy.get('div').should(($d) => {
+					expect($d).to.contain('overwrite any existing survey responses')
+				})
 			})
-		})
 		})
 
 		it('Should have the ability to creation of a participant list manually where each survey is assigned a unique survey link when the survey is in the first instrument position', () => {
@@ -100,39 +97,79 @@ describe('Data Entry through the Survey Feature', () => {
 
 	describe('User Interface', () => {
 		before(() => {
+			/*
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=9'})
 			cy.get('a').contains('Add / Edit Records').click()
 			cy.get('button').contains('Add new record').click()
 			cy.get('table#event_grid_table').within(($t) => {
 				cy.get('a').first().click()
 			})
+			*/
 		})
 
 		it('Should have the ability for a participant to enter data in a data collection instrument enabled and distributed as a survey', () => {
 			//WITHIN
-			cy.get('table#questiontable').should('not.be.empty')
+			let survey_url = null;
+  			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
+                    //Get the URL of the survey
+                    cy.get('input#longurl’').then((field) => {
+                        survey_url = field.val()
+					})
+					cy.visit(survey_url).then(()=> {
+						cy.get('table#questiontable').should('not.be.empty')
+					})
+			})
 		})
 
 		
 		it('Should have the ability to support Incomplete surveys status', () => {
 			//WITHIN
-			cy.get('select').should(($s) => {
-				expect($s).to.contain('Incomplete')
+			let survey_url = null;
+  			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
+                    //Get the URL of the survey
+                    cy.get('input#longurl’').then((field) => {
+                        survey_url = field.val()
+					})
+					cy.visit(survey_url).then(()=> {
+						cy.get('select').should(($s) => {
+							expect($s).to.contain('Incomplete')
+						})
+					})
 			})
+			
 		})
 
 		it('Should have the ability to support Partial Survey Response status', () => {
 			//WITHIN
-			cy.get('select').should(($s) => {
-				expect($s).to.contain('Unverified')
+			let survey_url = null;
+  			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
+                    //Get the URL of the survey
+                    cy.get('input#longurl’').then((field) => {
+                        survey_url = field.val()
+					})
+					cy.visit(survey_url).then(()=> {
+						cy.get('select').should(($s) => {
+							expect($s).to.contain('Unverified')
+						})
+					})
 			})
 		})
 
 		it('Should have the ability to support Completed Survey Response status', () => {
 			//WITHIN
-			cy.get('select').should(($s) => {
-				expect($s).to.contain('Complete')
+			let survey_url = null;
+  			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
+                    //Get the URL of the survey
+                    cy.get('input#longurl’').then((field) => {
+                        survey_url = field.val()
+					})
+					cy.visit(survey_url).then(()=> {
+						cy.get('select').should(($s) => {
+							expect($s).to.contain('Complete')
+						})
+					})
 			})
+			
 		})
 
 		it('Should have the ability to submitted survey responses to be changed by a user who has edit survey responses rights', () => {
@@ -166,7 +203,10 @@ describe('Data Entry through the Survey Feature', () => {
 		})
 
 		it('Should have the ability for "Edit Survey Responses" feature to be enabled or disabled', () => {
-		    
+			cy.visit_version({page: 'ControlCenter/user_settings.php'})
+			cy.get('td').contains('edit survey responses?').parent().within(($td) => {
+				expect($td).to.contain('Disable')
+			})
 		})
 	})
 })
