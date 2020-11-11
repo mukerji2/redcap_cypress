@@ -26,11 +26,21 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 		})
 
 		it ('Should show the project in development mode', () => {
-
+			cy.get('b').contains('Project status').parent.within(($s) => {
+				expect($s).to.contain('Development')
+			})
 
 		})
 
 		it('Should show the appropriate options for viewing and designing your data collection instruments', () => {
+			cy.get('span').contains('Design your data collection instruments & enable your surveys').parent().parent().within(($td) => {
+				expect($td).to.contain('Online Designer')
+				expect($td).to.contain('Data Dictionary')
+				expect($td).to.contain('REDCap Shared Library')
+				expect($td).to.contain('Download PDF of all instruments')
+				expect($td).to.contain('Download current data dictionary')
+				expect($td).to.contain('Check for identifiers')
+			})
 			// Online Designer
 			// Data Dictionary
 			// REDCap Shared Library
@@ -41,16 +51,32 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 
 		describe('Data Collection Instruments', () => {
 
-			it('Should allow a new instrument to be created', () => {
+			before(() => {
+				cy.visit_version({page: 'Design/online_designer.php', params: 'pid=13'})
+			})
 
+			it('Should allow a new instrument to be created', () => {
+				cy.get('div').contains('Data Collection Instruments').parent().within(() => {
+					cy.get('button').should(($b) => {
+						expect($b).to.contain('Create')
+					})
+				})
 			})
 
 			it('Should allow an instrument to be renamed', () => {
-
+				cy.get('button').contains('Choose action').click().then(($b) => {
+					cy.get('ul#formActionDropdown').should(($ul) => {
+						expect($ul).to.contain('Rename')
+					})
+				})
 			})
 
 			it('Should allow an instrument to be deleted', () => {
-
+				cy.get('button').contains('Choose action').click().then(($b) => {
+					cy.get('ul#formActionDropdown').should(($ul) => {
+						expect($ul).to.contain('Delete')
+					})
+				})
 			})
 
 			it('Should allow instruments to be reordered', () => {
