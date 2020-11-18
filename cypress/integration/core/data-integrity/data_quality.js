@@ -19,12 +19,16 @@ describe('Data Quality', () => {
         cy.get('textarea#input_rulename_id_0').type("new rule")
         cy.get('textarea#input_rulelogic_id_0').type('![my_first_instrument_complete]')
         cy.get('button').contains("Add").click()
+        /*   
+        cy.get('div#rulename_1').should(($div) => {
+                expect($div).to.contain('new rule')
+            })
+        */
+        
         cy.get('table#table-rules').should(($t) => {
             expect($t).to.contain('new rule')
         })
-        cy.get('div#rulename_1').should(($div) => {
-            expect($div).to.contain('new rule')
-        })
+        
     })
 
 	it('Should have the ability to execute a data quality rule', () => {
