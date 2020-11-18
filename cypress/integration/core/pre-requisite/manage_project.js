@@ -97,9 +97,10 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 
 		it('Should have the ability to enable and disable Longitudinal Data Collection', () => {
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
-			cy.get('button#setupLongiBtn').click()
-			cy.get('span.SavedMsg').should(($s) => {
-				expect($s).to.contain('Saved')
+			cy.get('button#setupLongiBtn').click().then(() => {
+				cy.get('span.SavedMsg').should(($s) => {
+					expect($s).to.contain('Saved')
+				})
 			})
 		})
 
@@ -110,8 +111,17 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 			cy.get('input#addbutton').click()
 			//cy.get('input#descrip').type('Event2')
 			//cy.get('input#addbutton').click()
-			cy.get('a').contains('Designate Instruments').click()
+			cy.get('a').contains('Designate Instruments').click().then(() => {
 			cy.get('button').contains('Begin Editing').click()
+			cy.get('td').contains('My First Instrument').parent().within(() => {
+				cy.get('input#my_first_instrument--41').check()	
+			})
+			cy.get('button#save_btn').click().then(() => {
+				cy.get('td').contains('My First Instrument').parent().within(($p) => {
+					expect($p).to.contain('img#img--my_first_instrument--41')
+				})
+			})
+		})
 
 		})
 

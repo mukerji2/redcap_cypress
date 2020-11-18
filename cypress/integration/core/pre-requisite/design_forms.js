@@ -26,19 +26,20 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 		})
 
 		it ('Should show the project in development mode', () => {
-			cy.get('b').contains('Project status').parent.within(($s) => {
+			cy.get('div').contains('Project status').parent().within(($s) => {
 				expect($s).to.contain('Development')
 			})
 
 		})
 
 		it('Should show the appropriate options for viewing and designing your data collection instruments', () => {
-			cy.get('span').contains('Design your data collection instruments & enable your surveys').parent().parent().within(($td) => {
+			cy.visit_version({page: 'ProjectSetup/index.php', params: "pid=13"})
+			cy.get('span').contains('Design your data collection instruments').parent().parent().within(($td) => {
 				expect($td).to.contain('Online Designer')
 				expect($td).to.contain('Data Dictionary')
 				expect($td).to.contain('REDCap Shared Library')
 				expect($td).to.contain('Download PDF of all instruments')
-				expect($td).to.contain('Download current data dictionary')
+				expect($td).to.contain('Download the current data dictionary')
 				expect($td).to.contain('Check for identifiers')
 			})
 			// Online Designer
@@ -80,13 +81,31 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 			})
 
 			it('Should allow instruments to be reordered', () => {
-
+				cy.get('tr#row_1').should(($tr) => {
+					expect($tr).to.contain('td.dragHandle')
+				})
 			})
 
 			describe('Field Types', () => {
 
 
 				it('Should contain all of expected field types', () => {
+					cy.get('a').contains('Demographics').click()
+					cy.get('input[value="Add Field"]').click().then(() => {
+						cy.get('select#field_type').should(($s) => {
+							expect($s).to.contain('Text Box')
+							expect($s).to.contain('Notes Box')
+							expect($s).to.contain('Calculated Field')
+							expect($s).to.contain('Multiple Choice – Drop Down')
+							expect($s).to.contain('Multiple Choice – Radio')
+							expect($s).to.contain('Checkboxes')
+							expect($s).to.contain('Signature')
+							expect($s).to.contain('File Upload')
+							expect($s).to.contain('Descriptive Text')
+							expect($s).to.contain('Begin New Section')
+						})
+					})
+
 					// Text Box
 					// Notes Box
 					// Calculated Field
