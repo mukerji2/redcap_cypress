@@ -3,6 +3,9 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 	before(() => {
 		//Reset the projects back to what they should be
 		cy.mysql_db('projects/pristine')
+		cy.visit_version({page: 'Design/online_designer.php', params: "pid=1"})
+		cy.get('input[value="Enter Draft Mode"]').click()
+
 		
 	})
 
@@ -12,7 +15,7 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
     		cy.set_user_type('standard')
 			
 			//Visit Classic Database 
-			cy.visit_version({page: 'Design/online_designer.php', params: "pid=13"})
+			cy.visit_version({page: 'ProjectSetup/index.php', params: "pid=1"})
     	})
 
 
@@ -22,7 +25,9 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 		})
 
 		it('Should show the project without surveys', () => {
-
+			cy.get('div').contains('Use surveys').should(($p) => {
+				expect($p).to.contain('Enable')
+			})
 		})
 
 		it ('Should show the project in development mode', () => {
@@ -33,14 +38,12 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 		})
 
 		it('Should show the appropriate options for viewing and designing your data collection instruments', () => {
-			cy.visit_version({page: 'ProjectSetup/index.php', params: "pid=13"})
-			cy.get('span').contains('Design your data collection instruments').parent().parent().within(($td) => {
-				expect($td).to.contain('Online Designer')
+			cy.get('span').contains('Design your data collection instruments').parent().parent().should(($td) => {
 				expect($td).to.contain('Data Dictionary')
 				expect($td).to.contain('REDCap Shared Library')
 				expect($td).to.contain('Download PDF of all instruments')
-				expect($td).to.contain('Download the current data dictionary')
-				expect($td).to.contain('Check for identifiers')
+				expect($td).to.contain('Download the current Data Dictionary')
+				expect($td).to.contain('Check For Identifiers')
 			})
 			// Online Designer
 			// Data Dictionary
@@ -53,7 +56,7 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 		describe('Data Collection Instruments', () => {
 
 			before(() => {
-				cy.visit_version({page: 'Design/online_designer.php', params: 'pid=13'})
+				cy.visit_version({page: 'Design/online_designer.php', params: 'pid=1'})
 			})
 
 			it('Should allow a new instrument to be created', () => {
@@ -81,8 +84,8 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 			})
 
 			it('Should allow instruments to be reordered', () => {
-				cy.get('tr#row_1').should(($tr) => {
-					expect($tr).to.contain('td.dragHandle')
+				cy.get('tr#row_1').should(($t) => {
+					expect($t).to.contain('td[class="dragHandle"]')
 				})
 			})
 
@@ -91,20 +94,26 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 
 				it('Should contain all of expected field types', () => {
 					cy.get('a').contains('Demographics').click()
-					cy.get('input[value="Add Field"]').click().then(() => {
-						cy.get('select#field_type').should(($s) => {
-							expect($s).to.contain('Text Box')
-							expect($s).to.contain('Notes Box')
-							expect($s).to.contain('Calculated Field')
-							expect($s).to.contain('Multiple Choice – Drop Down')
-							expect($s).to.contain('Multiple Choice – Radio')
-							expect($s).to.contain('Checkboxes')
-							expect($s).to.contain('Signature')
-							expect($s).to.contain('File Upload')
-							expect($s).to.contain('Descriptive Text')
-							expect($s).to.contain('Begin New Section')
+					cy.get('tr#date_enrolled-tr').within(() => {
+						cy.get('input[value="Add Field"]').click().then(() => {
+							cy.get('div#div_add_field').should(($b) => {
+								expect($b).to.be.visible()
+							})
+							cy.get('select').contains('Select a Type').parent().should(($s) => {
+								expect($s).to.contain('Text Box')
+								expect($s).to.contain('Notes Box')
+								expect($s).to.contain('Calculated Field')
+								expect($s).to.contain('Multiple Choice – Drop Down')
+								expect($s).to.contain('Multiple Choice – Radio')
+								expect($s).to.contain('Checkboxes')
+								expect($s).to.contain('Signature')
+								expect($s).to.contain('File Upload')
+								expect($s).to.contain('Descriptive Text')
+								expect($s).to.contain('Begin New Section')
+							})
 						})
 					})
+					
 
 					// Text Box
 					// Notes Box
@@ -119,7 +128,16 @@ describe('Design Forms using Data Dictionary & Online Designer', () => {
 				})
 
 				it('Should not allow invalid names', () => {
-				
+					cy.get('a').contains('Demographics').click()
+					cy.get('input[value="Add Field"]').first().click().then(() => {
+						cy.get('select#field_type').select('Text Box')
+						cy.get('input#field_name').type('h?i')
+						cy.get('button').contains('Save').click().then(() => {
+							cy.get('table#draggable').should(($t) => {
+								expect($t).to.contain('Variable: h_i')
+							})
+						})
+					})
 				})
 
 				it('Should allow reordering of fields', () => {
