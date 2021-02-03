@@ -107,8 +107,8 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 		it('Should have the ability to enable and disable Longitudinal Data Collection', () => {
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
 			cy.get('button#setupLongiBtn').click().then(() => {
-				cy.get('span.SavedMsg').should(($s) => {
-					expect($s).to.contain('Saved')
+				cy.get('div').contains('Use longitudinal data collection').parent().should(($p) => {
+					expect($p).to.contain('Disable')
 				})
 			})
 
@@ -122,7 +122,7 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 			//cy.get('input#descrip').type('Event2')
 			//cy.get('input#addbutton').click()
 			cy.get('a').contains('Designate Instruments').click().then(() => {
-			cy.get('button').contains('Begin Editing').click()
+			cy.get('button').contains('Begin Editing').click().then(() => {
 			cy.get('td').contains('My First Instrument').parent().within(() => {
 				cy.get('input#my_first_instrument--41').check()	
 			})
@@ -132,13 +132,14 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 				})
 			})
 		})
+	})
 
 		})
 
 		it('Should have the ability to define unique event schedules for each arm', () => { 
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
 			cy.get('div').contains('Scheduling module (longitudinal only)').within(() => {
-				cy.get('button').click()
+				cy.get('button').click({force: true})
 			})
 			cy.get('button').contains('Define My Events').click().then(() => {
 				cy.get('table#event_table').should(($t) => {
@@ -162,19 +163,37 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 	describe('User Interface - Survey Project Settings', () => {
 
 		it('Should have the ability to enable and disable survey functionality at the project level', () => { 
-
+			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
+			cy.get('div').contains('Use surveys in this project').within(($p) => {
+				expect($p).to.contain('Enable')
+				cy.get('button').contains('Enable').click()
+			})
 		})
 
 		it('Should have the ability to enable and disable each data collection instrument in a project as a survey', () => { 
-
+			cy.get('button').contains('Online Designer').click().then(() => {
+				cy.get('tr#row_1').should(($t) => {
+					expect($t).to.contain('Enable')
+				})
+				cy.get('button').contains('Enable').click()
+				cy.get('button#surveySettingsSubmit').click()
+			})
 		})
 
 		it('Should have the ability to set the survye status to active or offline', () => { 
-
+			cy.get('button').contains('Survey settings').click().then(() => {
+				cy.get('select').contains('Survey Active').parent().should(($s) => {
+					expect($s).to.contain('Survey Offline')
+				})
+			})
+			cy.get('button').contains('Cancel').click()
 		})
 
 		it('Should have the ability to create repeating surveys', () => { 
-
+			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
+			cy.get('td').contains('Enable optional modules').parent().within(($t) => {
+				expect($t).to.contain('Repeatable instruments and events')
+			})
 		})		
 	})
 
@@ -197,23 +216,46 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 		})
 
 		it('Should have the ability to limit creation of new projects to administrators', () => {
-
+			cy.get('a').contains('Control Center').click()
+			cy.get('a').contains('User Settings').click()
+			cy.get('tr').contains('create new projects').parent().within(($t) => {
+				cy.get('select').should(($s) => {
+					expect($s).to.contain('No, only Administrators can create new projects')
+				})
+			})
+			
 		})
 
 		it('Should have the ability to limit the moving of projects to production to administrators', () => {
-
+			cy.get('tr').contains('move projects to production').parent().within(($t) => {
+				cy.get('select').should(($s) => {
+					expect($s).to.contain('No, only Administrators can move projects to production')
+				})
+			})
 		})
 
 		it('Should have the ability to enable users to edit survey responses', () => {
-
+			cy.get('tr').contains('edit survey responses').parent().within(($t) => {
+				cy.get('select').should(($s) => {
+					expect($s).to.contain('Enabled')
+				})
+			})
 		})
 
 		it('Should have the ability to enable Draft Mode changes to be automatically approved under certain conditions', () => {
-
+			cy.get('tr').contains('Draft Mode changes to be approved automatically').parent().within(($t) => {
+				cy.get('select').should(($s) => {
+					expect($s).to.contain('Yes, ')
+				})
+			})
 		})
 
 		it('Should have the ability to limit adding or modifying events and arms while in Production mode to administrators', () => {
-
+			cy.get('tr').contains('add or modify events and arms on the Define My Events page').parent().within(($t) => {
+				cy.get('select').should(($s) => {
+					expect($s).to.contain('No, only Administrators can add/modify events in production')
+				})
+			})
 		})
 	})
 
