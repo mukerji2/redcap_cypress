@@ -107,8 +107,8 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 		it('Should have the ability to enable and disable Longitudinal Data Collection', () => {
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
 			cy.get('button#setupLongiBtn').click().then(() => {
-				cy.get('div').contains('Use longitudinal data collection').parent().should(($p) => {
-					expect($p).to.contain('Disable')
+				cy.get('button#setupLongiBtn').should(($b) => {
+					expect($b).to.contain('Disable')
 				})
 			})
 
@@ -118,10 +118,12 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
 			cy.get('button').contains('Define My Events').click()
 			cy.get('input#descrip').type('Event1')
-			cy.get('input#addbutton').click()
-			//cy.get('input#descrip').type('Event2')
-			//cy.get('input#addbutton').click()
-			cy.get('a').contains('Designate Instruments').click().then(() => {
+			cy.get('input#addbutton').click().then(() => {
+				cy.get('input#descrip').type('Event2')
+				cy.get('input#addbutton').click()
+			})
+			
+			cy.visit_version({page: 'Design/designate_forms.php', params: 'pid=14'})
 			cy.get('button').contains('Begin Editing').click().then(() => {
 			cy.get('td').contains('My First Instrument').parent().within(() => {
 				cy.get('input#my_first_instrument--41').check()	
@@ -132,7 +134,7 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 				})
 			})
 		})
-	})
+	
 
 		})
 
@@ -166,12 +168,12 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
 			cy.get('div').contains('Use surveys in this project').within(($p) => {
 				expect($p).to.contain('Enable')
-				cy.get('button').contains('Enable').click()
+				cy.get('button').contains('Enable').click({force: true})
 			})
 		})
 
 		it('Should have the ability to enable and disable each data collection instrument in a project as a survey', () => { 
-			cy.get('button').contains('Online Designer').click().then(() => {
+			cy.visit_version({page: 'Design/online_designer.php', params: 'pid=14'}).then(() => {
 				cy.get('tr#row_1').should(($t) => {
 					expect($t).to.contain('Enable')
 				})
@@ -191,7 +193,7 @@ describe('Manage Project Creation, Deletion, Settings', () => {
 
 		it('Should have the ability to create repeating surveys', () => { 
 			cy.visit_version({page: 'ProjectSetup/index.php', params: 'pid=14'})
-			cy.get('td').contains('Enable optional modules').parent().within(($t) => {
+			cy.get('td').contains('Enable optional modules').parent().parent().parent().within(($t) => {
 				expect($t).to.contain('Repeatable instruments and events')
 			})
 		})		

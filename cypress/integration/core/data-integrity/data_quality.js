@@ -55,11 +55,10 @@ describe('Data Quality', () => {
           //  cy.get('button').contains('Execute').click()
         //})
         cy.get('div#rulename_pd-10').parent().parent().parent().within(($d) => {
-            cy.get('a').click().then(() => {
-                cy.get('div.ui-dialog').should(($s) => {
-                    expect($s).to.contain('Discrepancies')
-                })
-            })
+            cy.get('a').click()
+        })
+        cy.get('div.ui-dialog').should(($s) => {
+            expect($s).to.contain('Discrepancies')
         })
 
     })
@@ -68,18 +67,25 @@ describe('Data Quality', () => {
         cy.visit_version({page: 'DataEntry/record_home.php', params: 'pid=13'})
         cy.get('button').contains('Add new record').click()
         //cy.get('select').contains('Incomplete').parent().parent().select()
-        cy.get('button#submit-btn-saverecord').click()
+        cy.get('button#submit-btn-saverecord').first().click()
         cy.visit_version({page: 'DataQuality/index.php', params: 'pid=13'})
         cy.get('div').contains('new rule').parent().parent().parent().within(($d) => {
-            cy.get('button').contains('Execute').click().then(() => {
-                cy.get('a').contains('view').click()
-                cy.get('a').contains('exclude').click().then(() => {
-                    cy.get('table#table-results_table_2').should(($t) => {
-                        expect($t).to.contain('remove exclusion')
-                    })
-                })
+            cy.get('button').contains('Execute').click()
+        })
+        cy.wait(100)
+        cy.get('div').contains('new rule').parent().parent().parent().within(($d) => {
+            cy.get('a').contains('view').click()
+        })
+        
+        
+        
+        cy.get('a').contains('exclude').click().then(() => {
+        cy.get('table#table-results_table_2').should(($t) => {
+            expect($t).to.contain('remove exclusion')
             })
         })
+           
+       
         
         
         
@@ -103,7 +109,7 @@ describe('Data Quality', () => {
 	it('Should have the ability to delete a user defined rule', () => {
         cy.get('div#ruledel_1').click().then(() => {
             cy.get('table#table-rules').should(($t) => {
-                expect($t).not.to.contain('new rule')
+                expect($t).not.to.contain('![my_first_instrument_complete]')
             })
         })
         
@@ -113,7 +119,11 @@ describe('Data Quality', () => {
         cy.visit_version({page: 'Design/define_events.php', params: 'pid=13'})
         cy.get('input#descrip').type("new event")
         cy.get('input#addbutton').click()
-        cy.get('a').contains('Designate Instruments').click()
+        cy.wait(100)
+        cy.get('input#descrip').type("new event2")
+        cy.get('input#addbutton').click()
+    
+        cy.visit_version({page: 'Design/designate_forms.php', params: 'pid=13'})
         cy.get('button').contains('Begin editing').click()
         cy.get('input#my_first_instrument--41').check()
         cy.get('button#save_btn').click()
@@ -127,6 +137,7 @@ describe('Data Quality', () => {
     })
 
 	it('Should have the ability to execute a custom data quality rule in real time', () => {
+        cy.visit_version({page: 'DataQuality/index.php', params: 'pid=13'})
         cy.get('textarea#input_rulename_id_0').parent().parent().parent().parent().should(($tr) => {
             expect($tr).to.contain('Execute in real time')
         })

@@ -10,9 +10,10 @@ describe('Data Entry through the Survey Feature', () => {
 		let survey_url = null;
   		cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
                     //Get the URL of the survey
-                    cy.get('input#longurl’').then((field) => {
+                    cy.get('input#longurl').then((field) => {
                         survey_url = field.val()
 					})
+					console.log(survey_url)
 					cy.visit(survey_url)
 					cy.get('tr#email-tr').within(($t) => {
 						cy.get('input').type('user1@yahoo.com')
@@ -79,12 +80,13 @@ describe('Data Entry through the Survey Feature', () => {
 
 		it('Should have the ability to prompt the user to leave the survey to avoid overwriting survey responses when opening surveys from a data entry form when using Open Survey link', () => {
 			//WITHIN
-			cy.get('ul#SurveyActionDropDownUl').within(($u) => {
-				cy.get('a#surveyoption-openSurvey').first().click()
-				cy.get('div').should(($d) => {
-					expect($d).to.contain('overwrite any existing survey responses')
+				cy.get('a#surveyoption-openSurvey').first().click().then(() => {
+					cy.get('div#popup6113115080932355').should(($d) => {
+						expect($d).to.contain('overwrite any existing survey responses')
+					})
 				})
-			})
+			
+						
 		})
 
 		it('Should have the ability to creation of a participant list manually where each survey is assigned a unique survey link when the survey is in the first instrument position', () => {
@@ -112,7 +114,7 @@ describe('Data Entry through the Survey Feature', () => {
 			let survey_url = null;
   			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
                     //Get the URL of the survey
-                    cy.get('input#longurl’').then((field) => {
+                    cy.get('input#longurl').then((field) => {
                         survey_url = field.val()
 					})
 					cy.visit(survey_url).then(()=> {
@@ -127,7 +129,7 @@ describe('Data Entry through the Survey Feature', () => {
 			let survey_url = null;
   			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
                     //Get the URL of the survey
-                    cy.get('input#longurl’').then((field) => {
+                    cy.get('input#longurl').then((field) => {
                         survey_url = field.val()
 					})
 					cy.visit(survey_url).then(()=> {
@@ -144,7 +146,7 @@ describe('Data Entry through the Survey Feature', () => {
 			let survey_url = null;
   			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
                     //Get the URL of the survey
-                    cy.get('input#longurl’').then((field) => {
+                    cy.get('input#longurl').then((field) => {
                         survey_url = field.val()
 					})
 					cy.visit(survey_url).then(()=> {
@@ -160,7 +162,7 @@ describe('Data Entry through the Survey Feature', () => {
 			let survey_url = null;
   			cy.visit_version({page: 'Surveys/invite_participants.php', params: 'pid=9'}).then(() => {
                     //Get the URL of the survey
-                    cy.get('input#longurl’').then((field) => {
+                    cy.get('input#longurl').then((field) => {
                         survey_url = field.val()
 					})
 					cy.visit(survey_url).then(()=> {
